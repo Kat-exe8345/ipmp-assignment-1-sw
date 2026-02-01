@@ -7,10 +7,22 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "dz:generate": "drizzle-kit generate",
+    "dz:migrate": "drizzle-kit migrate",
+    "dz:studio": "drizzle-kit studio",
+    "db:create": "docker run --name drizzle-postgres -e POSTGRES_PASSWORD=mypassword -d -p 5432:5432 postgres",
+    "db:start": "docker start drizzle-postgres",
+    "db:stop": "docker stop drizzle-postgres",
+    "db:restart": "docker restart drizzle-postgres",
+    "db:logs": "docker logs -f drizzle-postgres",
+    "db:ps": "docker ps -a"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
     "next": "16.1.6",
+    "pg": "^8.18.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
@@ -18,9 +30,12 @@
     "@biomejs/biome": "2.2.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.16.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.8",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
