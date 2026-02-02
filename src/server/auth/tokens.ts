@@ -1,8 +1,12 @@
 import { type JWTPayload, jwtVerify, SignJWT } from "jose";
 
-const key = new TextEncoder().encode(
-  process.env.JWT_SECRET_KEY ?? "jwt_secret_key",
-);
+const jwtSecret = process.env.JWT_SECRET_KEY;
+
+if (!jwtSecret) {
+  throw new Error("JWT_SECRET_KEY is not defined in environment variables");
+}
+
+const key = new TextEncoder().encode(jwtSecret);
 
 export async function encryptSessionJwt(payload: JWTPayload) {
   return await new SignJWT(payload)
@@ -16,6 +20,7 @@ export async function encryptSessionJwt(payload: JWTPayload) {
 export async function decryptSessionJwt(token: string) {
   const { payload } = await jwtVerify(token, key, {
     algorithms: ["HS256"],
+    issuer: "kat-exe",
   });
   return payload;
 }

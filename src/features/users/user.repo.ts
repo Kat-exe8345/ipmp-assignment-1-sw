@@ -2,13 +2,13 @@ import { db } from "@/db";
 import { usersTable } from "@/db/schema/users";
 import type { DBuser } from "./validators";
 
-export async function createDBUser(Credentials: DBuser) {
+export async function createDBUser(credentials: DBuser) {
   const [user] = await db
     .insert(usersTable)
     .values({
-      name: Credentials.name,
-      email: Credentials.email,
-      hashedPwd: Credentials.hashedPwd,
+      name: credentials.name,
+      email: credentials.email,
+      hashedPwd: credentials.hashedPwd,
     })
     .returning();
   return user;

@@ -9,64 +9,95 @@ import type { LoginFormData, SignupFormData } from "./validators";
 import { clearSessionCookie, createSessionCookie } from "@/server/auth/cookie";
 
 export async function login(formData: LoginFormData) {
-  const [existingUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, formData.email));
-  if (!existingUser) {
-    throw new Error("Invalid Credentials");
+  try {
+    const [existingUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, formData.email.toLowerCase()));
+    if (!existingUser) {
+      return {
+        ok: false,
+        code: "INVALID_CREDENTIALS",
+        message: "Invalid credentials",
+      };
+    }
+
+    // password verification
+    const valid = await verifyPassword(
+      formData.password,
+      existingUser.hashedPwd,
+    );
+    if (!valid) {
+      return {
+        ok: false,
+        code: "INVALID_CREDENTIALS",
+        message: "Invalid credentials",
+      };
+    }
+
+    // create session and store in db
+    const session = await createDBSession(existingUser.id);
+
+    // create session token and store in a cookie
+    const token = await encryptSessionJwt({
+      sessionId: session.id,
+    });
+
+    await createSessionCookie(token);
+
+    return { ok: true };
+  } catch (_error) {
+    return {
+      ok: false,
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong",
+    };
   }
-
-  // password verification
-  const valid = await verifyPassword(formData.password, existingUser.hashedPwd);
-  if (!valid) {
-    throw new Error("Invalid Credentials");
-  }
-
-  // create session and store in db
-  const session = await createDBSession(existingUser.id);
-
-  // create session token and store in a cookie
-  const token = await encryptSessionJwt({
-    sessionId: session.id,
-  });
-
-  await createSessionCookie(token);
-
-  return { ok: true };
 }
 
 export async function signup(formData: SignupFormData) {
-  const [existingUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, formData.email));
-  if (existingUser) {
-    throw new Error("User with this email already exists");
+  try {
+    const [existingUser] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, formData.email.toLowerCase()));
+    if (existingUser) {
+      return {
+        ok: false,
+        code: "EMAIL_TAKEN",
+        message: "User with this email already exists",
+      };
+    }
+
+    const hashedPwd = await hashPassword(formData.password);
+
+    // create new user
+    const credentials = {
+      name: formData.name,
+      email: formData.email.toLowerCase(),
+      hashedPwd: hashedPwd,
+    };
+
+    const newUser = await createDBUser(credentials);
+
+    // create session and store in db
+    const session = await createDBSession(newUser.id);
+
+    // create session token and store in a cookie
+    const token = await encryptSessionJwt({
+      sessionId: session.id,
+    });
+
+    await createSessionCookie(token);
+
+    return { ok: true };
+  } catch (_error) {
+    return {
+      ok: false,
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong",
+    };
   }
-
-  const hashedPwd = await hashPassword(formData.password);
-
-  // create new user
-  const credentials = {
-    name: formData.name,
-    email: formData.email,
-    hashedPwd: hashedPwd,
-  };
-
-  const newUser = await createDBUser(credentials);
-
-  // create session and store in db
-  const session = await createDBSession(newUser.id);
-
-  // create session token and store in a cookie
-  const token = await encryptSessionJwt({
-    sessionId: session.id,
-  });
-
-  await createSessionCookie(token);
-
-  return { ok: true };
 }
 
 export async function logout() {
