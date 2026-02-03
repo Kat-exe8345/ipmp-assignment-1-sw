@@ -1,100 +1,180 @@
+/** biome-ignore-all lint/correctness/noChildrenProp: Using tanstack forms */
 "use client";
 
-import { useState } from "react";
+import { signupSchema } from "@features/auth/validators";
+import { useForm } from "@tanstack/react-form-nextjs";
 import { useRouter } from "next/navigation";
 
 export function SignupForm() {
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+    },
+    onSubmit: async ({ value }) => {
+      try {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(value),
+        });
+        const data = await res.json();
+        console.log(data);
 
-  async function handleSubmit(e: React.SubmitEvent) {
-    e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+        if (!res.ok || !data.ok) {
+          form.setErrorMap({
+            onSubmit: data.message || "An error occurred",
+          });
+          throw new Error(data.message || "An error occurred");
+        }
 
-    try {
-      const res = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        setError(data.message || "An error occurred");
-        return;
+        router.push("/");
+        router.refresh();
+      } catch (_error) {
+        return null;
       }
+    },
+    validators: {
+      onChangeAsyncDebounceMs: 500,
+      onChangeAsync: signupSchema,
+      onSubmit: ({ value }) => {
+        if (!value.name || !value.email || !value.password) {
+          return "Please fill all the fields";
+        }
+        return undefined;
+      },
+    },
+  });
 
-      router.push("/");
-      router.refresh();
-    } catch (err) {
-      console.error(err);
-      setError("An error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }
   return (
-    <div className="flex flex-col items-center">
-      <h1 className="text-4xl font-bold mb-6 w-full text-center">Sign Up</h1>
-      <form
-        className="flex flex-col justify-between items-center"
-        id="signup-form"
-        onSubmit={handleSubmit}
+    <form
+      className="w-full max-w-md mx-auto p-8 bg-linear-to-br from-gray-950 to-gray-900 rounded-lg shadow-2xl"
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+    >
+      <h1 className="text-3xl font-bold text-white mb-8 text-center">
+        Sign Up
+      </h1>
+
+      <form.Field
+        name="name"
+        children={(field) => (
+          <div className="mb-6">
+            <label
+              htmlFor="name"
+              className="text-white font-semibold text-sm block mb-2"
+            >
+              Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              id="name"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-transparent transition"
+              placeholder="John Doe"
+            />
+            {!field.state.meta.isValid && (
+              <em className="text-red-400 text-sm mt-1 block">
+                {field.state.meta.errors[0]?.message}
+              </em>
+            )}
+          </div>
+        )}
+      />
+
+      <form.Field
+        name="email"
+        children={(field) => (
+          <div className="mb-6">
+            <label
+              htmlFor="email"
+              className="text-white font-semibold text-sm block mb-2"
+            >
+              Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              id="email"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-transparent transition"
+              placeholder="you@example.com"
+            />
+            {!field.state.meta.isValid && (
+              <em className="text-red-400 text-sm mt-1 block">
+                {field.state.meta.errors[0]?.message}
+              </em>
+            )}
+          </div>
+        )}
+      />
+
+      <form.Field
+        name="password"
+        children={(field) => (
+          <div className="mb-6">
+            <label
+              htmlFor="password"
+              className="text-white font-semibold text-sm block mb-2"
+            >
+              Password
+            </label>
+            <input
+              type="password"
+              name="password"
+              id="password"
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+              className="w-full px-4 py-2 rounded-md bg-gray-800 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:border-transparent transition"
+              placeholder="••••••••"
+            />
+            {!field.state.meta.isValid && (
+              <em className="text-red-400 text-sm mt-1 block">
+                {field.state.meta.errors[0]?.message}
+              </em>
+            )}
+          </div>
+        )}
+      />
+
+      <form.Subscribe
+        selector={(state) => [state.errorMap]}
+        children={([errorMap]) =>
+          errorMap.onSubmit ? (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500 text-red-400 rounded-md text-sm">
+              {errorMap.onSubmit}
+            </div>
+          ) : null
+        }
+      />
+
+      <button
+        type="submit"
+        className="w-full bg-linear-to-r from-gray-700 to-gray-600 hover:from-gray-800 hover:to-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+        disabled={form.state.isSubmitting}
       >
-        <label
-          htmlFor="name"
-          className="text-white mb-2 font-medium text-lg w-full px-2"
-        >
-          Name
-        </label>
-        <input
-          type="text"
-          placeholder="Example: John Doe"
-          className="border-2 p-4 rounded-md mb-6 w-lg focus:ring-0 focus:outline-none"
-          onChange={(e) => setName(e.target.value)}
-        />
-        <label
-          htmlFor="email"
-          className="text-white mb-2 font-medium text-lg w-full px-2"
-        >
-          Email
-        </label>
-        <input
-          type="email"
-          placeholder="Example: user@example.com"
-          className="border-2 p-4 rounded-md mb-6 w-lg focus:ring-0 focus:outline-none"
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <label
-          htmlFor="password"
-          className="text-white mb-2 font-medium text-lg w-full px-2"
-        >
-          Password
-        </label>
-        <input
-          type="password"
-          placeholder="Password"
-          className="border-2 p-4 rounded-md mb-6 w-lg focus:ring-0 focus:outline-none"
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 text-white p-4 rounded w-lg"
-          disabled={isLoading}
-        >
-          {isLoading ? "Please wait..." : "Sign Up"}
-        </button>
-        {error && <p className="text-sm text-red-500">{error}</p>}
-      </form>
-    </div>
+        {form.state.isSubmitting ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="animate-spin">⏳</span> Creating account...
+          </span>
+        ) : (
+          "Sign Up"
+        )}
+      </button>
+    </form>
   );
 }

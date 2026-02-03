@@ -9,12 +9,15 @@ export async function POST(request: Request) {
     const formData = await request.json();
 
     // data parsing & validation
-    const parsedData = parseAndThrow(formData, loginSchema);
+    const parsedResponse = parseAndThrow(formData, loginSchema);
+    if (!parsedResponse.ok) {
+      return parsedResponse;
+    }
 
-    const result = await login(parsedData);
-    return NextResponse.json(result);
-  } catch (error) {
-    console.log(error);
+    const parsedBody = await parsedResponse.json();
+    const result = await login(parsedBody.data);
+    return result;
+  } catch (_error) {
     return NextResponse.json(
       { ok: false, code: "INTERNAL_ERROR", message: "Something went wrong" },
       { status: 500 },

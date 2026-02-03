@@ -7,6 +7,7 @@ import { createDBSession, revokeDBSession } from "./session.repo";
 import { createDBUser } from "@/features/users/user.repo";
 import type { LoginFormData, SignupFormData } from "./validators";
 import { clearSessionCookie, createSessionCookie } from "@/server/auth/cookie";
+import { NextResponse } from "next/server";
 
 export async function login(formData: LoginFormData) {
   try {
@@ -15,11 +16,14 @@ export async function login(formData: LoginFormData) {
       .from(usersTable)
       .where(eq(usersTable.email, formData.email.toLowerCase()));
     if (!existingUser) {
-      return {
-        ok: false,
-        code: "INVALID_CREDENTIALS",
-        message: "Invalid credentials",
-      };
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid credentials",
+        },
+        { status: 401 },
+      );
     }
 
     // password verification
@@ -28,11 +32,14 @@ export async function login(formData: LoginFormData) {
       existingUser.hashedPwd,
     );
     if (!valid) {
-      return {
-        ok: false,
-        code: "INVALID_CREDENTIALS",
-        message: "Invalid credentials",
-      };
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid credentials",
+        },
+        { status: 401 },
+      );
     }
 
     // create session and store in db
@@ -45,13 +52,16 @@ export async function login(formData: LoginFormData) {
 
     await createSessionCookie(token);
 
-    return { ok: true };
+    return NextResponse.json({ ok: true }, { status: 200 });
   } catch (_error) {
-    return {
-      ok: false,
-      code: "INTERNAL_ERROR",
-      message: "Something went wrong",
-    };
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "INTERNAL_ERROR",
+        message: "Something went wrong",
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -62,11 +72,14 @@ export async function signup(formData: SignupFormData) {
       .from(usersTable)
       .where(eq(usersTable.email, formData.email.toLowerCase()));
     if (existingUser) {
-      return {
-        ok: false,
-        code: "EMAIL_TAKEN",
-        message: "User with this email already exists",
-      };
+      return NextResponse.json(
+        {
+          ok: false,
+          code: "EMAIL_TAKEN",
+          message: "User with this email already exists",
+        },
+        { status: 409 },
+      );
     }
 
     const hashedPwd = await hashPassword(formData.password);
@@ -90,13 +103,16 @@ export async function signup(formData: SignupFormData) {
 
     await createSessionCookie(token);
 
-    return { ok: true };
+    return NextResponse.json({ ok: true });
   } catch (_error) {
-    return {
-      ok: false,
-      code: "INTERNAL_ERROR",
-      message: "Something went wrong",
-    };
+    return NextResponse.json(
+      {
+        ok: false,
+        code: "INTERNAL_ERROR",
+        message: "Something went wrong",
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -118,5 +134,5 @@ export async function logout() {
     }
   }
 
-  return { ok: true };
+  return NextResponse.json({ ok: true }, { status: 200 });
 }
