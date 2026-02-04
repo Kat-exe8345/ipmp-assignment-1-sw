@@ -3,10 +3,13 @@
 
 import { loginSchema } from "@features/auth/validators";
 import { useForm } from "@tanstack/react-form-nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { LoaderCircleIcon } from "lucide-react";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/";
   const form = useForm({
     defaultValues: {
       email: "",
@@ -29,7 +32,7 @@ export function LoginForm() {
           });
           throw new Error(data.message || "An error occurred");
         }
-        router.push("/");
+        router.push(redirectUrl);
         router.refresh();
       } catch (_error) {
         return null;
@@ -127,19 +130,24 @@ export function LoginForm() {
         }
       />
 
-      <button
-        type="submit"
-        className="w-full bg-linear-to-r from-gray-700 to-gray-600 hover:from-gray-800 hover:to-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-        disabled={form.state.isSubmitting}
-      >
-        {form.state.isSubmitting ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="animate-spin">⏳</span> Logging in...
-          </span>
-        ) : (
-          "Login"
+      <form.Subscribe
+        selector={(state) => [state.isSubmitting]}
+        children={([isSubmitting]) => (
+          <button
+            type="submit"
+            className="w-full bg-linear-to-r from-gray-700 to-gray-600 hover:from-gray-800 hover:to-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <LoaderCircleIcon className="animate-spin" /> Logging in...
+              </span>
+            ) : (
+              "Login"
+            )}
+          </button>
         )}
-      </button>
+      />
     </form>
   );
 }

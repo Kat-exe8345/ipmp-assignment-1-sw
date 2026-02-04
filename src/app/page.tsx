@@ -1,4 +1,4 @@
-import SignOutBtn from "@/components/auth/signoutbtn";
+import { SignOutBtn } from "@components/auth/signoutbtn";
 
 export default function Home() {
   return (
@@ -7,7 +7,9 @@ export default function Home() {
         <h1 className="text-5xl font-bold text-zinc-900 dark:text-white sm:text-6xl">
           Welcome to <span className="text-blue-600">Next.js!</span>
         </h1>
-        <SignOutBtn />
+        <div className="mt-8 w-full flex flex-col gap-4 items-center">
+          <SignOutBtn />
+        </div>
       </main>
     </div>
   );

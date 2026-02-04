@@ -1,20 +1,19 @@
-import { db } from "@/db";
-import { usersTable } from "@/db/schema/users";
-import { eq } from "drizzle-orm";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { decryptSessionJwt, encryptSessionJwt } from "@/server/auth/tokens";
-import { createDBSession, revokeDBSession } from "./session.repo";
-import { createDBUser } from "@/features/users/user.repo";
+import { createDBSession, getDBSession, revokeDBSession } from "./session.repo";
+import { createDBUser, getDBUserByEmail } from "@/features/users/user.repo";
 import type { LoginFormData, SignupFormData } from "./validators";
-import { clearSessionCookie, createSessionCookie } from "@/server/auth/cookie";
+import {
+  clearSessionCookie,
+  createSessionCookie,
+  getSessionCookie,
+} from "@/server/auth/cookie";
 import { NextResponse } from "next/server";
 
+// returning NextResponse
 export async function login(formData: LoginFormData) {
   try {
-    const [existingUser] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.email, formData.email.toLowerCase()));
+    const existingUser = await getDBUserByEmail(formData.email.toLowerCase());
     if (!existingUser) {
       return NextResponse.json(
         {
@@ -67,10 +66,7 @@ export async function login(formData: LoginFormData) {
 
 export async function signup(formData: SignupFormData) {
   try {
-    const [existingUser] = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.email, formData.email.toLowerCase()));
+    const existingUser = await getDBUserByEmail(formData.email.toLowerCase());
     if (existingUser) {
       return NextResponse.json(
         {
@@ -135,4 +131,28 @@ export async function logout() {
   }
 
   return NextResponse.json({ ok: true }, { status: 200 });
+}
+
+// returning object | null
+export async function getSession() {
+  // get session token from cookie -> decrypt -> get session from db -> verify if session is valid -> return session
+  const sessionToken = await getSessionCookie();
+  if (!sessionToken) {
+    return null;
+  }
+
+  try {
+    const payload = await decryptSessionJwt(sessionToken);
+    const sessionId = payload.sessionId as string;
+    if (!sessionId) {
+      return null;
+    }
+    const session = await getDBSession(sessionId);
+    if (!session || session.revokedAt) {
+      return null;
+    }
+    return session;
+  } catch (_e) {
+    return null;
+  }
 }
