@@ -13,6 +13,7 @@ export default function LogoutPage() {
   useEffect(() => {
     const logout = async () => {
       try {
+        // await new Promise((resolve) => setTimeout(resolve, 6000)); // Simulate network delay
         const res = await fetch("/api/auth/logout", {
           method: "POST",
         });
@@ -58,7 +59,7 @@ export default function LogoutPage() {
       <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-950">
         <div className="text-center">
           <LoaderIcon
-            className="animate-spin mx-auto mb-6 text-gray-600 dark:text-gray-300"
+            className="animate-spin [animation-duration:3s] mx-auto mb-6 text-gray-600 dark:text-gray-300"
             size={48}
           />
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">

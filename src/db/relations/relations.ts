@@ -1,7 +1,12 @@
 import { relations } from "drizzle-orm";
 import * as schema from "../schema/index";
 
-export const boardsRelations = relations(schema.boards, ({ many }) => ({
+export const boardsRelations = relations(schema.boards, ({ many, one }) => ({
+  createdByUser: one(schema.users, {
+    fields: [schema.boards.createdByUserId],
+    references: [schema.users.id],
+    relationName: "userBoards",
+  }),
   lists: many(schema.lists),
 }));
 
@@ -11,7 +16,6 @@ export const listsRelations = relations(schema.lists, ({ one, many }) => ({
     references: [schema.boards.id],
   }),
   tasks: many(schema.tasks),
-  tags: many(schema.tags),
 }));
 
 export const tasksRelations = relations(schema.tasks, ({ one, many }) => ({
@@ -32,7 +36,7 @@ export const tagsRelations = relations(schema.tags, ({ one, many }) => ({
 }));
 
 export const usersRelations = relations(schema.users, ({ many }) => ({
-  boards: many(schema.boards),
+  boards: many(schema.boards, { relationName: "userBoards" }),
   taskComments: many(schema.taskComments),
 }));
 
