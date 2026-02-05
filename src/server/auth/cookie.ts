@@ -25,3 +25,9 @@ export async function clearSessionCookie() {
   });
   return sessionToken;
 }
+
+export async function getSessionCookie() {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get("session")?.value;
+  return sessionToken;
+}
